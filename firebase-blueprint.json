@@ -1,0 +1,106 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Client user profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 120 },
+        "email": { "type": "string", "maxLength": 255 },
+        "company": { "type": "string", "maxLength": 150 },
+        "persona": { "type": "string", "maxLength": 50 },
+        "currentPlan": { "type": "string", "maxLength": 50 },
+        "avatarColor": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string", "maxLength": 50 },
+        "updatedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "name", "email", "persona", "currentPlan"]
+    },
+    "Meeting": {
+      "title": "Meeting",
+      "description": "Meeting intelligence scribe record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "type": { "type": "string", "maxLength": 50 },
+        "template": { "type": "string", "maxLength": 50 },
+        "date": { "type": "string", "maxLength": 50 },
+        "durationMinutes": { "type": "number" },
+        "attendees": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Meeting attendees"
+        },
+        "summary": { "type": "string", "maxLength": 50000 },
+        "keyDiscussionPoints": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "decisions": {
+          "type": "array"
+        },
+        "actionItems": {
+          "type": "array"
+        },
+        "followUpEmail": {
+          "type": "object"
+        },
+        "candidateScorecard": {
+          "type": "object"
+        },
+        "sentiment": {
+          "type": "object"
+        },
+        "transcript": {
+          "type": "array"
+        },
+        "workspace": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "maxLength": 50 },
+        "updatedAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "userId", "title", "summary"]
+    },
+    "Invoice": {
+      "title": "Invoice",
+      "description": "Billing and invoice receipts for subscription plans",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 50 },
+        "planId": { "type": "string", "maxLength": 50 },
+        "planName": { "type": "string", "maxLength": 100 },
+        "amountUSD": { "type": "number" },
+        "amountINR": { "type": "number" },
+        "billingCycle": { "type": "string", "maxLength": 50 },
+        "paymentMethod": { "type": "string", "maxLength": 50 },
+        "paymentRef": { "type": "string", "maxLength": 100 },
+        "upiId": { "type": "string", "maxLength": 100 },
+        "clientName": { "type": "string", "maxLength": 120 },
+        "clientEmail": { "type": "string", "maxLength": 255 },
+        "companyName": { "type": "string", "maxLength": 150 },
+        "billingAddress": { "type": "string", "maxLength": 300 },
+        "status": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "userId", "planId", "planName", "amountUSD", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Client user profiles and preferences"
+    },
+    "/meetings/{meetingId}": {
+      "schema": { "$ref": "#/entities/Meeting" },
+      "description": "Saved meeting notes, transcripts, and action items"
+    },
+    "/invoices/{invoiceId}": {
+      "schema": { "$ref": "#/entities/Invoice" },
+      "description": "Generated and settled client invoices"
+    }
+  }
+}

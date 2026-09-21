@@ -1,0 +1,100 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all access unless explicitly granted
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'persona', 'currentPlan']) &&
+        data.id is string && isValidId(data.id) &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 120 &&
+        data.email is string && data.email.size() > 3 && data.email.size() <= 255 &&
+        data.persona is string && data.persona.size() <= 50 &&
+        data.currentPlan is string && data.currentPlan.size() <= 50 &&
+        (!('company' in data) || (data.company is string && data.company.size() <= 150)) &&
+        (!('avatarColor' in data) || (data.avatarColor is string && data.avatarColor.size() <= 50));
+    }
+
+    function isValidMeeting(data) {
+      return data.keys().hasAll(['id', 'userId', 'title', 'summary']) &&
+        data.id is string && isValidId(data.id) &&
+        data.userId is string && isValidId(data.userId) &&
+        data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+        data.summary is string && data.summary.size() <= 50000 &&
+        (!('type' in data) || (data.type is string && data.type.size() <= 50)) &&
+        (!('template' in data) || (data.template is string && data.template.size() <= 50)) &&
+        (!('date' in data) || (data.date is string && data.date.size() <= 50)) &&
+        (!('durationMinutes' in data) || (data.durationMinutes is number)) &&
+        (!('attendees' in data) || (data.attendees is list && data.attendees.size() <= 50)) &&
+        (!('keyDiscussionPoints' in data) || (data.keyDiscussionPoints is list && data.keyDiscussionPoints.size() <= 100)) &&
+        (!('workspace' in data) || (data.workspace is string && data.workspace.size() <= 50)) &&
+        (!('status' in data) || (data.status is string && data.status.size() <= 50));
+    }
+
+    function isValidInvoice(data) {
+      return data.keys().hasAll(['id', 'userId', 'planId', 'planName', 'amountUSD', 'status']) &&
+        data.id is string && isValidId(data.id) &&
+        data.userId is string && isValidId(data.userId) &&
+        data.planId is string && data.planId.size() <= 50 &&
+        data.planName is string && data.planName.size() <= 100 &&
+        data.amountUSD is number && data.amountUSD >= 0 &&
+        data.status is string && data.status.size() <= 50 &&
+        (!('clientName' in data) || (data.clientName is string && data.clientName.size() <= 120)) &&
+        (!('clientEmail' in data) || (data.clientEmail is string && data.clientEmail.size() <= 255));
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUser(incoming()) &&
+        incoming().id == existing().id &&
+        incoming().email == existing().email;
+      allow delete: if false;
+    }
+
+    // Meetings Collection
+    match /meetings/{meetingId} {
+      allow get: if isSignedIn() && isValidId(meetingId) && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(meetingId) && incoming().userId == request.auth.uid && isValidMeeting(incoming());
+      allow update: if isSignedIn() && isValidId(meetingId) && resource.data.userId == request.auth.uid &&
+        incoming().userId == existing().userId && isValidMeeting(incoming());
+      allow delete: if isSignedIn() && isValidId(meetingId) && resource.data.userId == request.auth.uid;
+    }
+
+    // Invoices Collection
+    match /invoices/{invoiceId} {
+      allow get: if isSignedIn() && isValidId(invoiceId) && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(invoiceId) && incoming().userId == request.auth.uid && isValidInvoice(incoming());
+      allow update: if false;
+      allow delete: if isSignedIn() && isValidId(invoiceId) && resource.data.userId == request.auth.uid;
+    }
+  }
+}

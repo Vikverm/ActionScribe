@@ -1,0 +1,6 @@
+{
+  "name": "ActionScribe – Meeting Notes, Audio Transcription & Action Scribe",
+  "description": "Transcribe meetings, extract key decisions, and track action items with ActionScribe. Turn client calls and interviews into follow-up emails in seconds.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
