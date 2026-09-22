@@ -18,7 +18,8 @@ import {
   Globe,
   Languages,
   Folder,
-  Tag
+  Tag,
+  ChevronLeft
 } from 'lucide-react';
 import { ActionItem, Decision, FollowUpEmail, MeetingRecord } from '../types';
 import { ActionItemsList } from './ActionItemsList';
@@ -34,6 +35,7 @@ interface MeetingDetailProps {
   onUpdateMeeting: (updated: MeetingRecord) => void;
   onDeleteMeeting: (id: string) => void;
   onOpenExport: () => void;
+  onBackToList?: () => void;
 }
 
 const SUPPORTED_LANGUAGES = [
@@ -55,6 +57,7 @@ export const MeetingDetail: React.FC<MeetingDetailProps> = ({
   onUpdateMeeting,
   onDeleteMeeting,
   onOpenExport,
+  onBackToList,
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'extract' | 'chat' | 'email' | 'scorecard' | 'insights'>('overview');
   const [isEditingTitle, setIsEditingTitle] = useState(false);
@@ -231,6 +234,11 @@ export const MeetingDetail: React.FC<MeetingDetailProps> = ({
               <span>•</span>
               <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                 {meeting.sentiment.timeSavedMinutes}m saved
+              </span>
+              <span>•</span>
+              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80 px-2 py-0.5 rounded-full">
+                <Sparkles className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Gemini 3.8 Flash Active</span>
               </span>
             </div>
 

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import Markdown from 'react-markdown';
 import { 
   Bot, 
   Send, 
@@ -31,11 +32,11 @@ interface ChatMessage {
 export const MeetingAIChat: React.FC<MeetingAIChatProps> = ({ meeting, onJumpToTimestamp }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
-      id: 'welcome-1',
+      id: `welcome-${meeting.id}`,
       role: 'assistant',
-      content: `Hello! I'm your **ActionScribe AI Meeting Assistant** (similar to Notta AI Chat & Otter Assistant). 
+      content: `Hello! I'm your **ActionScribe AI Meeting Assistant**.
 
-I have analyzed **"${meeting.title}"**, including the full discussion transcript, ${meeting.decisions.length} decisions, and ${meeting.actionItems.length} action items. 
+I have analyzed **"${meeting.title}"**, including the full discussion transcript, ${meeting.decisions.length} decisions, and ${meeting.actionItems.length} action items.
 
 Ask me anything about this meeting, or choose a prompt below!`,
       timestamp: 'Just now',
@@ -47,6 +48,23 @@ Ask me anything about this meeting, or choose a prompt below!`,
   const [isLoading, setIsLoading] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  // Sync welcome message when active meeting changes
+  useEffect(() => {
+    setMessages([
+      {
+        id: `welcome-${meeting.id}`,
+        role: 'assistant',
+        content: `Hello! I'm your **ActionScribe AI Meeting Assistant**.
+
+I have analyzed **"${meeting.title}"**, including the full discussion transcript, ${meeting.decisions.length} decisions, and ${meeting.actionItems.length} action items.
+
+Ask me anything about this meeting, or choose a prompt below!`,
+        timestamp: 'Just now',
+        source: 'gemini-3.8-flash',
+      },
+    ]);
+  }, [meeting.id, meeting.title, meeting.decisions.length, meeting.actionItems.length]);
 
   const quickPrompts = [
     { label: 'Executive Brief', icon: FileText, query: 'Generate an executive 3-bullet summary highlighting the most critical takeaway for our C-suite.' },
@@ -126,7 +144,7 @@ Ask me anything about this meeting, or choose a prompt below!`,
   const handleReset = () => {
     setMessages([
       {
-        id: 'welcome-reset',
+        id: `welcome-reset-${Date.now()}`,
         role: 'assistant',
         content: `Chat history reset. How can I help you extract insights from **"${meeting.title}"**?`,
         timestamp: 'Just now',
@@ -135,37 +153,149 @@ Ask me anything about this meeting, or choose a prompt below!`,
     ]);
   };
 
-  // Render text with clickable timestamp badges like [02:15]
-  const renderMessageContent = (content: string) => {
-    const timestampRegex = /\[(\d{2}:\d{2})\]/g;
-    const parts = [];
-    let lastIndex = 0;
-    let match;
+  // Render assistant messages with rich Markdown and interactive timestamp buttons
+  const renderAssistantMarkdown = (rawContent: string) => {
+    // Transform [02:15] timestamps into Markdown links with #time- prefix
+    const prepared = rawContent.replace(
+      /\[(\d{2}:\d{2})\]/g,
+      (_, time) => `[${time}](#time-${time})`
+    );
 
-    while ((match = timestampRegex.exec(content)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push(content.slice(lastIndex, match.index));
-      }
-      const timeStr = match[1];
-      parts.push(
-        <button
-          key={`ts-${match.index}`}
-          onClick={() => onJumpToTimestamp?.(timeStr)}
-          className="inline-flex items-center gap-0.5 px-1.5 py-0.2 mx-1 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-indigo-700 dark:text-indigo-300 font-mono text-[11px] font-semibold rounded cursor-pointer transition"
-          title={`Jump audio & transcript to ${timeStr}`}
+    return (
+      <div className="text-slate-800 dark:text-neutral-100 text-xs sm:text-[13px] leading-relaxed">
+        <Markdown
+          components={{
+            a: ({ href, children }) => {
+              if (href?.startsWith('#time-')) {
+                const time = href.replace('#time-', '');
+                return (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onJumpToTimestamp?.(time);
+                    }}
+                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 mx-0.5 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-500/20 dark:hover:bg-indigo-500/30 text-indigo-700 dark:text-indigo-300 font-mono text-[11px] font-semibold rounded cursor-pointer transition align-baseline shadow-2xs"
+                    title={`Jump audio & transcript to ${time}`}
+                  >
+                    <Clock className="w-2.5 h-2.5 inline mr-0.5" />
+                    <span>[{time}]</span>
+                  </button>
+                );
+              }
+              return (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-indigo-600 dark:text-indigo-400 font-medium underline underline-offset-2 hover:opacity-80"
+                >
+                  {children}
+                </a>
+              );
+            },
+            strong: ({ children }) => (
+              <strong className="font-semibold text-slate-900 dark:text-white">
+                {children}
+              </strong>
+            ),
+            p: ({ children }) => (
+              <p className="mb-2.5 last:mb-0 leading-relaxed">
+                {children}
+              </p>
+            ),
+            ul: ({ children }) => (
+              <ul className="list-disc pl-4 my-2 space-y-1">
+                {children}
+              </ul>
+            ),
+            ol: ({ children }) => (
+              <ol className="list-decimal pl-4 my-2 space-y-1">
+                {children}
+              </ol>
+            ),
+            li: ({ children }) => (
+              <li className="leading-relaxed">
+                {children}
+              </li>
+            ),
+            h1: ({ children }) => (
+              <h1 className="text-sm font-bold text-slate-900 dark:text-white mt-3 mb-1.5">
+                {children}
+              </h1>
+            ),
+            h2: ({ children }) => (
+              <h2 className="text-xs font-bold text-slate-900 dark:text-white mt-2.5 mb-1">
+                {children}
+              </h2>
+            ),
+            h3: ({ children }) => (
+              <h3 className="text-xs font-semibold text-slate-900 dark:text-white mt-2 mb-1">
+                {children}
+              </h3>
+            ),
+            blockquote: ({ children }) => (
+              <blockquote className="border-l-2 border-indigo-500 pl-3 my-2 italic text-slate-600 dark:text-neutral-300 bg-indigo-50/50 dark:bg-indigo-950/30 py-1 rounded-r text-xs">
+                {children}
+              </blockquote>
+            ),
+            code: ({ inline, children }: any) => {
+              if (inline) {
+                return (
+                  <code className="px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-neutral-700/80 text-indigo-700 dark:text-indigo-300 font-mono text-[11px]">
+                    {children}
+                  </code>
+                );
+              }
+              return (
+                <pre className="p-3 rounded-xl bg-slate-900 text-slate-100 font-mono text-xs overflow-x-auto my-2 border border-slate-800">
+                  <code>{children}</code>
+                </pre>
+              );
+            },
+            table: ({ children }) => (
+              <div className="overflow-x-auto my-2 rounded-lg border border-slate-200 dark:border-neutral-700">
+                <table className="min-w-full divide-y divide-slate-200 dark:divide-neutral-700 text-xs text-left">
+                  {children}
+                </table>
+              </div>
+            ),
+            th: ({ children }) => (
+              <th className="px-3 py-1.5 font-semibold text-slate-900 dark:text-white bg-slate-100 dark:bg-neutral-800">
+                {children}
+              </th>
+            ),
+            td: ({ children }) => (
+              <td className="px-3 py-1.5 border-t border-slate-200 dark:border-neutral-700">
+                {children}
+              </td>
+            ),
+          }}
         >
-          <Clock className="w-2.5 h-2.5 inline" />
-          <span>[{timeStr}]</span>
-        </button>
-      );
-      lastIndex = match.index + match[0].length;
-    }
+          {prepared}
+        </Markdown>
+      </div>
+    );
+  };
 
-    if (lastIndex < content.length) {
-      parts.push(content.slice(lastIndex));
-    }
-
-    return parts.length > 0 ? parts : content;
+  // Render user messages cleanly with markdown support
+  const renderUserMarkdown = (rawContent: string) => {
+    return (
+      <div className="text-white text-xs sm:text-[13px] leading-relaxed">
+        <Markdown
+          components={{
+            p: ({ children }) => <p className="mb-1.5 last:mb-0 leading-relaxed text-white">{children}</p>,
+            strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
+            ul: ({ children }) => <ul className="list-disc pl-4 my-1 space-y-0.5 text-white">{children}</ul>,
+            ol: ({ children }) => <ol className="list-decimal pl-4 my-1 space-y-0.5 text-white">{children}</ol>,
+            li: ({ children }) => <li className="leading-relaxed text-white">{children}</li>,
+          }}
+        >
+          {rawContent}
+        </Markdown>
+      </div>
+    );
   };
 
   return (
@@ -181,8 +311,9 @@ Ask me anything about this meeting, or choose a prompt below!`,
               <h3 className="font-display font-semibold text-sm text-slate-900 dark:text-neutral-100">
                 ActionScribe AI Meeting Chat
               </h3>
-              <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
-                Notta-Parity
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/80 text-emerald-700 dark:text-emerald-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>Gemini 3.8 Flash</span>
               </span>
             </div>
             <p className="text-[11px] text-slate-500 dark:text-neutral-400">
@@ -240,17 +371,19 @@ Ask me anything about this meeting, or choose a prompt below!`,
               )}
 
               <div
-                className={`relative group max-w-[85%] sm:max-w-[75%] rounded-2xl p-3.5 text-xs sm:text-[13px] leading-relaxed ${
+                className={`relative group max-w-[85%] sm:max-w-[75%] rounded-2xl p-3.5 shadow-2xs ${
                   isUser
                     ? 'bg-indigo-600 text-white rounded-tr-xs'
                     : 'bg-slate-100 dark:bg-neutral-800 text-slate-800 dark:text-neutral-100 rounded-tl-xs border border-slate-200 dark:border-neutral-700'
                 }`}
               >
-                <div className="whitespace-pre-wrap font-sans">
-                  {renderMessageContent(msg.content)}
+                <div>
+                  {isUser
+                    ? renderUserMarkdown(msg.content)
+                    : renderAssistantMarkdown(msg.content)}
                 </div>
 
-                <div className="flex items-center justify-between gap-2 mt-2 pt-1 border-t border-black/5 dark:border-white/5 text-[10px] opacity-75">
+                <div className="flex items-center justify-between gap-2 mt-2 pt-1.5 border-t border-black/5 dark:border-white/5 text-[10px] opacity-75">
                   <span>{msg.timestamp}</span>
                   {!isUser && (
                     <div className="flex items-center gap-2">

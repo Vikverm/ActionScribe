@@ -182,7 +182,7 @@ export const MeetingSidebar: React.FC<MeetingSidebarProps> = ({
   };
 
   return (
-    <aside className="w-full lg:w-80 xl:w-88 flex-shrink-0 flex flex-col bg-white dark:bg-neutral-900 border-b lg:border-b-0 lg:border-r border-slate-200/80 dark:border-neutral-800 lg:min-h-[calc(100vh-3.5rem)] transition-colors">
+    <aside className="w-full md:w-72 lg:w-80 xl:w-88 flex-shrink-0 flex flex-col bg-white dark:bg-neutral-900 border-b md:border-b-0 md:border-r border-slate-200/80 dark:border-neutral-800 md:min-h-[calc(100vh-3.5rem)] transition-colors">
       {/* Search & Streamlined Filters */}
       <div className="p-3 border-b border-slate-200/80 dark:border-neutral-800 space-y-2.5">
         <div className="relative">

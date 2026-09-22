@@ -2,31 +2,34 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Plus, 
   Crown, 
-  SlidersHorizontal,
-  Zap,
-  Sun,
-  Moon,
-  Mail,
-  FileText,
-  ChevronDown,
-  Check,
-  Users,
-  Laptop,
-  CheckSquare,
-  UserCheck,
-  Building2,
-  Sparkles,
-  UploadCloud,
-  Mic,
-  Bot,
-  MoreHorizontal,
-  LogIn,
-  UserPlus,
-  User,
-  LogOut,
-  BarChart3,
-  Layers,
-  Video
+  SlidersHorizontal, 
+  Zap, 
+  Sun, 
+  Moon, 
+  Mail, 
+  FileText, 
+  ChevronDown, 
+  Check, 
+  Users, 
+  Laptop, 
+  CheckSquare, 
+  UserCheck, 
+  Building2, 
+  Sparkles, 
+  UploadCloud, 
+  Mic, 
+  Bot, 
+  MoreHorizontal, 
+  LogIn, 
+  UserPlus, 
+  User, 
+  LogOut, 
+  BarChart3, 
+  Layers, 
+  Video,
+  Menu,
+  X,
+  ChevronRight
 } from 'lucide-react';
 import { UserUsageState } from '../types';
 import { PLANS } from '../data/sampleMeetings';
@@ -49,6 +52,8 @@ interface HeaderProps {
   mainView?: 'meetings' | 'tasks' | 'analytics';
   onChangeMainView?: (view: 'meetings' | 'tasks' | 'analytics') => void;
   pendingTasksCount?: number;
+  isMobileMenuOpen?: boolean;
+  onToggleMobileMenu?: () => void;
 }
 
 export const PERSONAS = [
@@ -109,9 +114,22 @@ export const Header: React.FC<HeaderProps> = ({
   mainView = 'meetings',
   onChangeMainView,
   pendingTasksCount = 0,
+  isMobileMenuOpen: isMobileMenuOpenProp,
+  onToggleMobileMenu: onToggleMobileMenuProp,
 }) => {
   const { theme, toggleTheme } = useTheme();
   const { user, logout, isAuthenticated } = useAuth();
+  const [internalMobileOpen, setInternalMobileOpen] = useState(false);
+  const isMobileNavOpen = isMobileMenuOpenProp !== undefined ? isMobileMenuOpenProp : internalMobileOpen;
+  const toggleMobileNav = onToggleMobileMenuProp || (() => setInternalMobileOpen(!internalMobileOpen));
+  const closeMobileNav = () => {
+    if (onToggleMobileMenuProp && isMobileNavOpen) {
+      onToggleMobileMenuProp();
+    } else {
+      setInternalMobileOpen(false);
+    }
+  };
+
   const [isPersonaOpen, setIsPersonaOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -224,8 +242,43 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Center: Image-matched Navigation Bar */}
-        <div className="flex items-center gap-2">
+        {/* Tablet-only Compact Nav: Meetings and Tasks */}
+        <div className="hidden md:flex lg:hidden items-center gap-1 bg-slate-100/90 dark:bg-neutral-800/90 p-1 rounded-xl border border-slate-200/80 dark:border-neutral-700/80 text-xs">
+          <button
+            type="button"
+            id="tablet-nav-meetings-btn"
+            onClick={() => onChangeMainView && onChangeMainView('meetings')}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition ${
+              mainView === 'meetings'
+                ? 'bg-white dark:bg-neutral-900 text-slate-900 dark:text-neutral-100 font-semibold shadow-xs'
+                : 'text-slate-600 dark:text-neutral-400 font-medium'
+            }`}
+          >
+            <Video className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <span>Meetings</span>
+          </button>
+          <button
+            type="button"
+            id="tablet-nav-tasks-btn"
+            onClick={() => onChangeMainView && onChangeMainView('tasks')}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition ${
+              mainView === 'tasks'
+                ? 'bg-white dark:bg-neutral-900 text-slate-900 dark:text-neutral-100 font-semibold shadow-xs'
+                : 'text-slate-600 dark:text-neutral-400 font-medium'
+            }`}
+          >
+            <CheckSquare className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+            <span>Tasks</span>
+            {pendingTasksCount > 0 && (
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300">
+                {pendingTasksCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Center: Desktop-matched Navigation Bar */}
+        <div className="hidden lg:flex items-center gap-2">
           <nav className="flex items-center gap-1 bg-slate-100/90 dark:bg-neutral-800/90 p-1 rounded-2xl border border-slate-200/80 dark:border-neutral-700/80 text-xs shadow-2xs">
             {/* Meetings */}
             <button
@@ -366,6 +419,17 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Right: Theme Toggle, Profile & Primary Action */}
         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          {/* Gemini AI Live Status Indicator */}
+          <div
+            id="gemini-live-badge"
+            className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-emerald-700 dark:text-emerald-300 bg-emerald-50/90 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/80"
+            title="Google Gemini 3.8 Flash AI Engine Active"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+            <span className="font-semibold text-[11px]">Gemini 3.8</span>
+          </div>
+
           {/* Plan badge (compact status indicator) */}
           <button
             id="plan-quota-badge"
@@ -624,13 +688,291 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             id="open-new-scribe-btn"
             onClick={onOpenNewModal}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 shadow-xs transition active:scale-95"
+            className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 shadow-xs transition active:scale-95 shrink-0"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span>New Scribe</span>
+            <span>New<span className="hidden sm:inline"> Scribe</span></span>
+          </button>
+
+          {/* Mobile Menu Hamburger Button */}
+          <button
+            id="header-mobile-menu-btn"
+            onClick={toggleMobileNav}
+            className="p-1.5 sm:p-2 rounded-lg text-slate-600 dark:text-neutral-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 transition lg:hidden"
+            title="Toggle Navigation Menu"
+            aria-label="Toggle navigation menu"
+          >
+            {isMobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
+
+      {/* Mobile Navigation Drawer Overlay */}
+      {isMobileNavOpen && (
+        <div 
+          id="header-mobile-nav-drawer"
+          className="fixed inset-x-0 top-14 bottom-0 z-40 bg-black/50 backdrop-blur-xs lg:hidden animate-in fade-in duration-150"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeMobileNav();
+          }}
+        >
+          <div className="bg-white dark:bg-neutral-900 border-b border-slate-200 dark:border-neutral-800 p-4 max-h-[calc(100vh-4rem)] overflow-y-auto space-y-4 shadow-2xl">
+            {/* Header / Close Row */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-neutral-800">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
+                Navigation & Actions
+              </span>
+              <button
+                onClick={closeMobileNav}
+                className="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-neutral-200 rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-800"
+                aria-label="Close navigation"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Persona / Workspace Selector Pill */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-neutral-400">Workspace Persona Mode</span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {PERSONAS.map((p) => {
+                  const IconComp = p.icon;
+                  const isSelected = p.id === selectedPersona;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        onSelectPersona(p.id);
+                      }}
+                      className={`flex items-center gap-2 p-2 rounded-xl text-left text-xs transition ${
+                        isSelected
+                          ? 'bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 font-semibold shadow-2xs'
+                          : 'bg-slate-50 dark:bg-neutral-800 border border-slate-200/60 dark:border-neutral-750 text-slate-700 dark:text-neutral-300 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${
+                        isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-200/80 dark:bg-neutral-700 text-slate-600 dark:text-neutral-300'
+                      }`}>
+                        <IconComp className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="truncate">{p.shortLabel}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Core Navigation Views */}
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-neutral-400">Main Dashboards</span>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => {
+                    onChangeMainView && onChangeMainView('meetings');
+                    closeMobileNav();
+                  }}
+                  className={`flex flex-col items-center justify-center p-2.5 rounded-xl border text-xs transition ${
+                    mainView === 'meetings'
+                      ? 'bg-blue-50/80 dark:bg-blue-950/40 border-blue-300 dark:border-blue-800 text-blue-700 dark:text-blue-300 font-semibold'
+                      : 'bg-slate-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-750 text-slate-700 dark:text-neutral-300'
+                  }`}
+                >
+                  <Video className="w-4 h-4 text-blue-500 mb-1" />
+                  <span>Meetings</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    onChangeMainView && onChangeMainView('tasks');
+                    closeMobileNav();
+                  }}
+                  className={`flex flex-col items-center justify-center p-2.5 rounded-xl border text-xs transition relative ${
+                    mainView === 'tasks'
+                      ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 font-semibold'
+                      : 'bg-slate-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-750 text-slate-700 dark:text-neutral-300'
+                  }`}
+                >
+                  <CheckSquare className="w-4 h-4 text-indigo-500 mb-1" />
+                  <span>Tasks</span>
+                  {pendingTasksCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-indigo-600 text-white">
+                      {pendingTasksCount}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => {
+                    onChangeMainView && onChangeMainView('analytics');
+                    closeMobileNav();
+                  }}
+                  className={`flex flex-col items-center justify-center p-2.5 rounded-xl border text-xs transition ${
+                    mainView === 'analytics'
+                      ? 'bg-purple-50/80 dark:bg-purple-950/40 border-purple-300 dark:border-purple-800 text-purple-700 dark:text-purple-300 font-semibold'
+                      : 'bg-slate-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-750 text-slate-700 dark:text-neutral-300'
+                  }`}
+                >
+                  <BarChart3 className="w-4 h-4 text-purple-500 mb-1" />
+                  <span>Analytics</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Intake Actions */}
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-neutral-400">Add & Record</span>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <button
+                  onClick={() => {
+                    closeMobileNav();
+                    onOpenNewModalWithTab('upload');
+                  }}
+                  className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-800 border border-slate-200/80 dark:border-neutral-750 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-750 transition"
+                >
+                  <UploadCloud className="w-4 h-4 text-purple-500 shrink-0" />
+                  <span className="font-medium text-left">Upload Audio</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    closeMobileNav();
+                    onOpenNewModalWithTab('record');
+                  }}
+                  className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-800 border border-slate-200/80 dark:border-neutral-750 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-750 transition"
+                >
+                  <Mic className="w-4 h-4 text-rose-500 shrink-0" />
+                  <span className="font-medium text-left">Record Live</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    closeMobileNav();
+                    onOpenNewModalWithTab('bot');
+                  }}
+                  className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-800 border border-slate-200/80 dark:border-neutral-750 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-750 transition"
+                >
+                  <Bot className="w-4 h-4 text-indigo-500 shrink-0" />
+                  <span className="font-medium text-left">Bot Inviter</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    closeMobileNav();
+                    onOpenNewModalWithTab('transcript');
+                  }}
+                  className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-800 border border-slate-200/80 dark:border-neutral-750 text-slate-700 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-750 transition"
+                >
+                  <FileText className="w-4 h-4 text-slate-500 shrink-0" />
+                  <span className="font-medium text-left">Paste Notes</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Plan & Usage Banner */}
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-neutral-800/70 border border-slate-200/80 dark:border-neutral-750 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <Crown className={`w-4 h-4 ${isFree ? 'text-slate-400' : 'text-amber-500'}`} />
+                <div>
+                  <div className="font-bold text-slate-900 dark:text-neutral-100">
+                    {currentPlanConfig.name} Plan
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-neutral-400">
+                    {usageState.meetingsThisMonth} of {currentPlanConfig.monthlyLimit} monthly scribes used
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  closeMobileNav();
+                  onOpenPricing();
+                }}
+                className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold text-xs transition"
+              >
+                {isFree ? 'Upgrade' : 'Manage'}
+              </button>
+            </div>
+
+            {/* Secondary Links & Account */}
+            <div className="space-y-1 pt-1 border-t border-slate-100 dark:border-neutral-800 text-xs">
+              <button
+                onClick={() => {
+                  closeMobileNav();
+                  onOpenInvoices();
+                }}
+                className="w-full flex items-center justify-between p-2 rounded-lg text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 transition"
+              >
+                <div className="flex items-center gap-2.5">
+                  <FileText className="w-4 h-4 text-slate-400" />
+                  <span>Invoices & Billing History</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+
+              <button
+                onClick={() => {
+                  closeMobileNav();
+                  onOpenTemplates();
+                }}
+                className="w-full flex items-center justify-between p-2 rounded-lg text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 transition"
+              >
+                <div className="flex items-center gap-2.5">
+                  <SlidersHorizontal className="w-4 h-4 text-slate-400" />
+                  <span>Custom Prompt Templates</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+
+              <button
+                onClick={() => {
+                  closeMobileNav();
+                  onOpenContact();
+                }}
+                className="w-full flex items-center justify-between p-2 rounded-lg text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 transition"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Mail className="w-4 h-4 text-slate-400" />
+                  <span>Support & Feedback</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+
+              {isAuthenticated ? (
+                <button
+                  onClick={() => {
+                    closeMobileNav();
+                    logout();
+                  }}
+                  className="w-full flex items-center gap-2.5 p-2 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition font-medium"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out ({user?.name || user?.email})</span>
+                </button>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <button
+                    onClick={() => {
+                      closeMobileNav();
+                      onOpenAuth('login');
+                    }}
+                    className="py-2 text-center rounded-xl bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 font-semibold"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => {
+                      closeMobileNav();
+                      onOpenAuth('register');
+                    }}
+                    className="py-2 text-center rounded-xl bg-indigo-600 text-white font-semibold shadow-xs"
+                  >
+                    Register
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };

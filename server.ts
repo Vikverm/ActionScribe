@@ -42,12 +42,13 @@ async function generateGeminiWithResilience(
   const modelsToTry = [
     params.primaryModel || 'gemini-3.8-flash',
     'gemini-3.1-flash-lite',
+    'gemini-flash-latest',
   ];
 
   let lastError: any = null;
 
   for (const model of modelsToTry) {
-    for (let attempt = 1; attempt <= 2; attempt++) {
+    for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         const response = await ai.models.generateContent({
           model,
@@ -72,8 +73,8 @@ async function generateGeminiWithResilience(
           errMsg.includes('UNAVAILABLE') ||
           errMsg.includes('RESOURCE_EXHAUSTED');
 
-        if (isTransient && attempt < 2) {
-          await new Promise((r) => setTimeout(r, 400 * attempt));
+        if (isTransient && attempt < 3) {
+          await new Promise((r) => setTimeout(r, 600 * attempt));
           continue;
         }
 
@@ -426,7 +427,7 @@ Ensure all dates are realistic, action items have concrete owners and deadlines,
             data: parsed,
           });
         } catch (geminiError: any) {
-          // Gracefully fallback to intelligent heuristic parser if models unavailable
+          console.warn('Gemini analyze-meeting attempt warning, switching to fallback:', geminiError?.message || geminiError);
         }
       }
 
